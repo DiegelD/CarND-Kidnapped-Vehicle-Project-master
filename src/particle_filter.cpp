@@ -258,39 +258,15 @@ void ParticleFilter::resample() {
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
   std::default_random_engine gen;
-  std::discrete_distribution<> distribution(particles.begin(), particles.end());
-  std::vector<Particle> particles_resampled;
+  std::discrete_distribution<int> distribution(particles.begin(), particles.end());
+  std::vector<Particle> weighted(num_particles);
 
-  for (int i = 0; particles.size(); ++i)
-  {
-    double index = distribution(gen);
-    double beta = 0.0;
-    double two = 2.0;
-    double max_weight;
-    // Getting the max weight. Because double and const is not possible to x. And to avoid erros
-    if (weights.size() == 0 )
-    {
-      max_weight = 0;
-    }
-    else
-    {
-      max_weight = *std::max(weights.begin(), weights.end());
-    }
-
-    beta = beta + distribution(gen) * two * max_weight;
-
-    while (particles[index].weight < beta)
-    {
-      beta = beta - particles[index].weight;
-      int modulo_operator = particles.size();
-      index = (index + 1) % modulo_operator;
-    }
-
-    particles_resampled.push_back(particles[index]);
+  for (int i = 0; i < num_particles; ++i){
+    int j = distribution(gen);
+    weighted.at(i) = particles.at(j);
   }
-  // Delete Vector with old particles. So that in the following step the resampled particels can be used.
-   particles.clear();
-   particles.push_back(particles_resampled);
+
+  particles = weighted;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, 
