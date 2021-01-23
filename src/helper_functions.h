@@ -65,10 +65,9 @@ inline double dist(double x1, double y1, double x2, double y2) {
  * @param (x2,y2) x and y coordinates of second point
  * @output Euclidean distance between two 2D points
  */
-
+/*
 double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs,
-                   double mu_x, double mu_y)
-{
+                   double mu_x, double mu_y); {
   // calculate normalization term
   double gauss_norm;
   gauss_norm = 1 / (2 * M_PI * sig_x * sig_y);
@@ -83,6 +82,7 @@ double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs,
 
   return weight;
 }
+*/
 
 /**
  * Computes the error between ground truth and particle filter data.

@@ -101,25 +101,33 @@ class ParticleFilter {
   const bool initialized() const {
     return is_initialized;
   }
+   /**
+    * Calculating the 2D Gausian distribution
+    * 
+    * */
+  double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs,
+                     double mu_x, double mu_y);
 
-  /**
+    // calculate normalization term
+
+    /**
    * Used for obtaining debugging information related to particles.
    */
-  std::string getAssociations(Particle best);
-  std::string getSenseCoord(Particle best, std::string coord);
+    std::string getAssociations(Particle best);
+    std::string getSenseCoord(Particle best, std::string coord);
 
-  // Set of current particles
-  std::vector<Particle> particles;
+    // Set of current particles
+    std::vector<Particle> particles;
 
- private:
-  // Number of particles to draw
-  int num_particles; 
-  
-  // Flag, if filter is initialized
-  bool is_initialized;
-  
-  // Vector of weights of all particles
-  std::vector<double> weights; 
-};
+  private:
+    // Number of particles to draw
+    int num_particles;
+
+    // Flag, if filter is initialized
+    bool is_initialized;
+
+    // Vector of weights of all particles
+    std::vector<double> weights;
+  };
 
 #endif  // PARTICLE_FILTER_H_
