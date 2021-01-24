@@ -38,7 +38,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    * NOTE: Consult particle_filter.h for more information about this method 
    *   (and others in this file).
    */
-  num_particles = 100;  // TODO: Set the number of particles
+  num_particles = 50;  // TODO: Set the number of particles
   weights.resize(num_particles, 1.0);
 
   // intialize the noise distibution
@@ -77,42 +77,34 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
     
-    // Adding noise to the prediction
-    normal_distribution<double> dist_x(0, std_pos[0]);
-    normal_distribution<double> dist_y(0, std_pos[1]);
-    normal_distribution<double> dist_theta(0, std_pos[2]);
 
     double x_f, y_f, theta_f;
-
-    for (int i = 0; i < num_particles; ++i)
-    {
-      Particle particle = particles[i];
-      double x_0 = particle.x;
-      double y_0 = particle.y;
-      double theta_0 = particle.theta;
-
-      if (yaw_rate < 0.1)
-      {
-        x_f = x_0 + (velocity) * (sin(theta_0) - sin(theta_0));
-        y_f = y_0 + (velocity) * (cos(theta_0) - cos(theta_0));
-        theta_f = theta_0;
-      }
-      else
-      {
-        x_f = x_0 + (velocity / yaw_rate) * (sin(theta_0 + (yaw_rate * delta_t)) - sin(theta_0));
-        y_f = y_0 + (velocity / yaw_rate) * (cos(theta_0 + (yaw_rate * delta_t)) - cos(theta_0 + (yaw_rate * delta_t)));
-        theta_f = yaw_rate * delta_t;
-      }
-
-      // Adding noise
-      particle.x = x_f + dist_x(gen);
-      particle.y = y_f + dist_y(gen);
-      particle.theta = theta_f + dist_theta(gen);
-
-      particles[i] = particle;
-    }
     
-}
+    for (auto& p: particles){
+    
+      if(fabs(yaw_rate) > 0.01){
+      p.x += (velocity / yaw_rate) * (sin(p.theta + (yaw_rate * delta_t)) - sin(p.theta));
+      p.y += (velocity / yaw_rate) * (cos(p.theta) - cos(p.theta + yaw_rate * delta_t));
+      p.theta += yaw_rate * delta_t;
+      }
+      else {
+        p.x += velocity *  delta_t * cos(p.theta);     
+        p.y += velocity *  delta_t * sin(p.theta);
+      }
+    
+    // Adding noise to the prediction
+      normal_distribution<double> dist_x(p.x, std_pos[0]);
+      normal_distribution<double> dist_y(p.y, std_pos[1]);
+      normal_distribution<double> dist_theta(p.theta, std_pos[2]);
+
+      p.x = dist_x(gen);
+      p.y = dist_y(gen);
+      p.theta = dist_theta(gen);
+
+      }
+    
+    }
+
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
                                      vector<LandmarkObs>& observations) {
@@ -131,18 +123,24 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
             RAnking them in a vector to the samles error.
             Associate the smales number to the pediction 
   */
-  
-  for (auto obs: observations){
+  //std::cout << "Entering Data Association"  << std::endl;
+  /*
+  LandmarkObs obs;
+  LandmarkObs pre;
+  for (int i; i<observations.size(); ++i){
 
-      double low_distance = 1E10; // some numer ager than any possible measurment
-
+  		double low_distance = 1E10; // some numer ager than any possible measurment
+	  	obs.x = 
     for (auto pre: predicted ){
 
-      double distance = sqrt(pow((obs.x - pre.x), 2) + pow((obs.y - pre.y), 2));
-
+      double distance = dist(obs.x, obs.y, pre.x, pre.y);
+      
       if (distance < low_distance){
         low_distance = distance;
         obs.id = pre.id;
+        //std::cout << "Update ID"  << std::endl;
+        //std::cout << obs.id  <<" " <<pre.id << std::endl;
+        
       }
     }
     // Sort the vector, samllest error to the beginning
@@ -150,7 +148,31 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
   }
   
 }
+*/
+  LandmarkObs obs;
+  LandmarkObs pre;
+  for (int i = 0; i < observations.size(); ++i) {
+    obs.x = observations[i].x;
+    obs.y = observations[i].y;
+    double low_distance = 1E10; // some numer ager than any possible measurment
+    //int selected_id = -1;
+      for (int j = 0; j < predicted.size(); ++j) {
+          pre.x = predicted[j].x;
+          pre.y = predicted[j].y;
+          pre.id = predicted[j].id;
+         // double distance = dist(obs_x, obs_y, pred_x, pred_y);
+          double distance = dist(obs.x, obs.y, pre.x, pre.y);
 
+          if (distance < low_distance){
+            low_distance = distance;
+            obs.id = pre.id;
+          }
+      }
+      observations[i].id = obs.id;
+   } 
+}  
+
+  
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
                                    const vector<LandmarkObs> &observations, 
                                    const Map &map_landmarks) {
@@ -168,7 +190,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
   
-  vector<LandmarkObs> Obs_transformed;
+  //vector<LandmarkObs> Obs_transformed;
   LandmarkObs obs;
 
   for (int i=0; i<particles.size(); ++i){
@@ -177,9 +199,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     x_part = particles[i].x;
     y_part = particles[i].y;
     theta = particles[i].theta;
-    particles[i].weight = 0;          // Importend, so that every new call will distribute the weights new
+    //particles[i].weight = 1;          // Importend, so that every new call will distribute the weights new
 
-
+	vector<LandmarkObs> Obs_transformed;
+    
     for (int j = 0; j < observations.size(); ++j){
 
       obs.x = observations[j].x;
@@ -204,6 +227,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    // declearing Vector for landmarks in vehicle sensor range 
    vector<LandmarkObs> landmarks_range;
    LandmarkObs lm; 
+    
    for (int k = 0; k < map_landmarks.landmark_list.size(); ++k)
    {
 
@@ -235,17 +259,25 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       for (int m = 0; m < Obs_transformed.size(); ++m)
       {
         // checking that the Observation fits to the landmark. The nears assosiation is done in dataAssociation
+        //std::cout << "Check If Ladmarks == Obs"  << std::endl;
         if (landmarks_range[l].id == Obs_transformed[m].id){
           x_obs = Obs_transformed[m].x;
           y_obs = Obs_transformed[m].y;
         
           weight *= multiv_prob(sig_x, sig_y, x_obs, y_obs, mu_x, mu_y);
+          
+          //std::cout << "multiv_prob"  << std::endl;
+          //std::cout << sig_x << sig_y << x_obs << y_obs << mu_x << mu_y << std::endl;
         }
       }
     }
     // Update of particle weight
     particles[i].weight = weight;
     weights[i] = weight;
+    
+    std::cout << "particle" << i << std::endl;
+    std::cout << particles[i].weight << std::endl;
+
   }
   
   /*
